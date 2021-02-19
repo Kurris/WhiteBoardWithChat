@@ -7,23 +7,27 @@ const test = () => import('../view/test.vue')
 const login = () => import('../view/login.vue')
 
 const routes = [
-    {
-        path: '/',
-        component: login
-    },
-    {
-        path: '/login',
-        component: login
-    },
-    {
-        path: '/test',
-        component: test
-    }
+	{
+		path: '/',
+		component: login,
+	},
+	{
+		path: '/login',
+		component: login,
+	},
+	{
+		path: '/whiteboard',
+		component: Chat,
+	},
+	{
+		path: '/test',
+		component: test,
+	},
 ]
 
 const router = new Router({
-    routes,
-    mode: 'history',
+	routes,
+	mode: 'history',
 })
 
 export default router

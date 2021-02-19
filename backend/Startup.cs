@@ -18,9 +18,8 @@ namespace WhiteBoard
         {
             Configuration = configuration;
         }
-        /// <summary>
-        /// øÁ”Ú±Í÷æ
-        /// </summary>
+
+
         private readonly string _corsPolicy = "AllowCors";
         public IConfiguration Configuration { get; }
 
@@ -34,7 +33,7 @@ namespace WhiteBoard
             {
                 op.AddPolicy(_corsPolicy, builder =>
                 {
-                    builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+                    builder.SetIsOriginAllowed(x => true).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
                 });
             });
         }

@@ -34,7 +34,7 @@
 
 <script>
 import * as signalR from "@microsoft/signalr";
-
+import Vue from 'vue'
 export default {
 
     data() {
@@ -56,7 +56,7 @@ export default {
         },
         async goHome(type) {
 
-            let hubUrl = "http://47.116.143.51:5001/whiteboard";
+            let hubUrl = "http://localhost:5000/whiteboard";
             const connection = new signalR.HubConnectionBuilder()
                 //.withAutomaticReconnect()
                 .withUrl(hubUrl)
@@ -70,12 +70,13 @@ export default {
             connection.on("onConnected", (content) => {
                 console.log(content);
             });
-
-            if (type == 0) {
-
-            }
-
-            this.chatVisible = false;
+            connection.invoke('CreateOrJoinRoom', this.ruleForm.username, 'roomname').then(res => {
+                if (res.status) {
+                    console.log(res);
+                    this.chatVisible = false;
+                    this.$router.push('/whiteboard')
+                }
+            })
         },
     },
     created() { },
