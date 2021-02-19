@@ -58,18 +58,12 @@ export default {
 
             let hubUrl = "http://localhost:5000/whiteboard";
             const connection = new signalR.HubConnectionBuilder()
-                //.withAutomaticReconnect()
                 .withUrl(hubUrl)
                 .build();
 
             //连接开始
             await connection.start();
-            Vue.$signalR = connection
 
-            //连接成功
-            connection.on("onConnected", (content) => {
-                console.log(content);
-            });
             connection.invoke('CreateOrJoinRoom', this.ruleForm.username, 'roomname').then(res => {
                 if (res.status) {
                     console.log(res);
@@ -77,6 +71,7 @@ export default {
                     this.$router.push('/whiteboard')
                 }
             })
+            Vue.$signalR = connection
         },
     },
     created() { },

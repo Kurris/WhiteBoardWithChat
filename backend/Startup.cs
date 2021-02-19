@@ -27,7 +27,10 @@ namespace WhiteBoard
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddSignalR();
+            services.AddSignalR(option =>
+            {
+                option.MaximumReceiveMessageSize = 102400000;
+            });
             services.AddMemoryCache();
             services.AddCors(op =>
             {
