@@ -11,8 +11,7 @@ namespace WhiteBoard
     {
         static ConcurrentDictionary<string, string> _dicGrps = new ConcurrentDictionary<string, string>();
         static ConcurrentDictionary<string, string> _dicUsers = new ConcurrentDictionary<string, string>();
-        static ConcurrentDictionary<string, string> _dicGrpPers = new ConcurrentDictionary<string, string>();
-
+        static ConcurrentDictionary<string, string> _dicGrpMaster = new ConcurrentDictionary<string, string>();
 
         public override async Task OnConnectedAsync()
         {
@@ -24,6 +23,31 @@ namespace WhiteBoard
             {
                 await Clients.Caller.SendAsync("onConnected", "连接成功");
             }
+        }
+
+        public override async Task OnDisconnectedAsync(Exception exception)
+        {
+            if (_dicGrpMaster.TryGetValue(Context.ConnectionId, out string roomNameSMaster))
+            {
+                if (!string.IsNullOrEmpty(roomNameSMaster))
+                {
+                    foreach (var item in _dicGrps)
+                    {
+                        string key = item.Key;
+                        string value = item.Value;
+
+                        if (value == roomNameSMaster)
+                        {
+                            _dicGrps.TryRemove(key, out _);
+                        }
+                    }
+                }
+                _dicGrpMaster.TryRemove(Context.ConnectionId, out _);
+            }
+
+            _dicGrps.TryRemove(Context.ConnectionId, out string roomName);
+            _dicUsers.TryRemove(Context.ConnectionId, out _);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
         }
 
         public async Task OnChatBoard(string content)
@@ -45,12 +69,17 @@ namespace WhiteBoard
             });
         }
 
+        public async Task OnPrintBoard(string content)
+        {
+
+        }
+
         public async Task<Result> CreateOrJoinRoom(string userName, string roomName)
         {
 
-            if (!_dicGrpPers.ContainsKey(Context.ConnectionId))
+            if (!_dicGrpMaster.ContainsKey(Context.ConnectionId))
             {
-                _dicGrpPers.TryAdd(Context.ConnectionId, roomName);
+                _dicGrpMaster.TryAdd(Context.ConnectionId, roomName);
             }
 
             if (!_dicGrps.ContainsKey(Context.ConnectionId))
@@ -78,10 +107,10 @@ namespace WhiteBoard
     public class Result
     {
         public bool Status { get; set; }
-        public string UserName { get; set; }
         public string ConnectionId { get; set; }
-        public string Content { get; set; }
-        public string CurrentTIme { get; set; } = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        public string UserName { get; set; }
+        public string CurrentTime { get; set; } = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         public string RoomName { get; set; }
+        public string Content { get; set; }
     }
 }

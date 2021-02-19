@@ -132,6 +132,7 @@ export default {
     methods: {
         sendMsg() {
             let content = this.editorContent
+            console.log(this.editorContent);
             this.editorContent = '';
             Vue.$signalR.invoke('OnChatBoard', content)
             this.editorContent = ''
