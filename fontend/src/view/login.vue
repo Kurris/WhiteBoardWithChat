@@ -14,12 +14,20 @@
                     </el-form-item>
 
                     <div class="login-btn">
-                        <el-button type="primary" style="float:right;width:100px" @click="inLogin">登录</el-button>
+                        <el-button type="primary" style="float:right;width:100px" @click="inLogin">确定用户名称</el-button>
                     </div>
                 </el-form>
             </div>
         </div>
-        <el-dialog title="聊天房间" :visible.sync="chatVisible" :show-close="false" width="200px" class="homeList" center>
+
+        <el-dialog title="加入房间方式" :visible.sync="chatVisible" :show-close="false" width="300px" class="homeList" center>
+
+            <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="1px">
+                <el-form-item prop="username">
+                    <el-input v-model="ruleForm.roomName" placeholder="房间号" clearable></el-input>
+                </el-form-item>
+            </el-form>
+
             <ul>
                 <li>
                     <el-button type="primary" @click="goHome(0)">创建房间</el-button>
@@ -29,12 +37,14 @@
                 </li>
             </ul>
         </el-dialog>
+
     </div>
 </template>
 
 <script>
 import * as signalR from "@microsoft/signalr";
 import Vue from 'vue'
+
 export default {
 
     data() {
@@ -42,6 +52,7 @@ export default {
             chatVisible: false,
             ruleForm: {
                 username: "",
+                roomName: "",
             },
             rules: {
                 username: [{ required: true, message: "用户名不能为空", trigger: "blur" }],
@@ -64,13 +75,36 @@ export default {
             //连接开始
             await connection.start();
 
-            connection.invoke('CreateOrJoinRoom', this.ruleForm.username, 'roomname').then(res => {
-                if (res.status) {
-                    console.log(res);
-                    this.chatVisible = false;
-                    this.$router.push('/whiteboard')
-                }
-            })
+            if (type == 0) {
+                connection.invoke('CreateRoom', this.ruleForm.username, this.ruleForm.roomName).then(res => {
+                    if (res.status) {
+                        this.chatVisible = false;
+                        this.$router.push({
+                            path: '/whiteboard',
+                            query: {
+                                roomName: this.ruleForm.roomName,
+                                userName: this.ruleForm.username
+                            }
+                        })
+                    }
+                })
+            } else {
+                connection.invoke('JoinRoom', this.ruleForm.username, this.ruleForm.roomName).then(res => {
+                    if (!res.status) {
+                        this.$notify.warning(res.content)
+                    } else {
+                        this.chatVisible = false;
+                        this.$router.push({
+                            path: '/whiteboard',
+                            query: {
+                                roomName: this.ruleForm.roomName,
+                                userName: this.ruleForm.username
+                            }
+                        })
+                    }
+                })
+            }
+
             Vue.$signalR = connection
         },
     },

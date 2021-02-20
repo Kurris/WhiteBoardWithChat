@@ -11,16 +11,13 @@ namespace WhiteBoard
     {
         static ConcurrentDictionary<string, string> _dicGrps = new ConcurrentDictionary<string, string>();
         static ConcurrentDictionary<string, string> _dicUsers = new ConcurrentDictionary<string, string>();
-        static ConcurrentDictionary<string, string> _dicGrpMaster = new ConcurrentDictionary<string, string>();
+        static ConcurrentDictionary<string, string> _dicGrpOwner = new ConcurrentDictionary<string, string>();
+        static ConcurrentDictionary<string, string> _dicGrpPermission = new ConcurrentDictionary<string, string>();
 
-        // public override async Task OnConnectedAsync()
-        // {
-        //     await Clients.Caller.SendAsync("onConnected", "连接成功");
-        // }
 
         public override async Task OnDisconnectedAsync(Exception exception)
         {
-            if (_dicGrpMaster.TryGetValue(Context.ConnectionId, out string roomNameSMaster))
+            if (_dicGrpOwner.TryGetValue(Context.ConnectionId, out string roomNameSMaster))
             {
                 if (!string.IsNullOrEmpty(roomNameSMaster))
                 {
@@ -32,34 +29,123 @@ namespace WhiteBoard
                         if (value == roomNameSMaster)
                         {
                             _dicGrps.TryRemove(key, out _);
+                            _dicUsers.TryRemove(key, out _);
+                            _dicGrpPermission.TryRemove(key, out _);
+                            await Groups.RemoveFromGroupAsync(key, roomNameSMaster);
                         }
                     }
                 }
-                _dicGrpMaster.TryRemove(Context.ConnectionId, out _);
+                _dicGrpOwner.TryRemove(Context.ConnectionId, out _);
             }
 
+            _dicGrpPermission.TryRemove(Context.ConnectionId, out _);
             _dicGrps.TryRemove(Context.ConnectionId, out string roomName);
             _dicUsers.TryRemove(Context.ConnectionId, out _);
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
         }
 
+        public async Task<Result> CreateRoom(string userName, string roomName)
+        {
+            if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(roomName))
+            {
+                return new Result()
+                {
+                    Status = false,
+                    Content = "用户名称和房间号不能为空"
+                };
+            }
+
+
+            if (!_dicGrpOwner.ContainsKey(Context.ConnectionId))
+            {
+                foreach (var item in _dicGrpOwner)
+                {
+                    if (item.Value == roomName)
+                    {
+                        return new Result()
+                        {
+                            Status = false,
+                            Content = $"房间号 {roomName} 已存在"
+                        };
+                    }
+                }
+                _dicGrpOwner.TryAdd(Context.ConnectionId, roomName);
+            }
+
+            var res = await JoinRoom(userName, roomName);
+            return res;
+        }
+        public async Task<Result> JoinRoom(string userName, string roomName)
+        {
+
+            if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(roomName))
+            {
+                return new Result()
+                {
+                    Status = false,
+                    Content = "用户名称和房间号不能为空"
+                };
+            }
+
+            bool existRoom = false;
+            foreach (var item in _dicGrpOwner)
+            {
+                if (item.Value == roomName) existRoom = true;
+            }
+
+            if (!existRoom)
+            {
+                return new Result()
+                {
+                    Status = false,
+                    Content = $"不存在房间号 {roomName}"
+                };
+            }
+
+            //加入房间
+            if (!_dicGrps.ContainsKey(Context.ConnectionId))
+            {
+                _dicGrps.TryAdd(Context.ConnectionId, roomName);
+            }
+            await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
+
+            //记录用户名称
+            if (!_dicUsers.ContainsKey(Context.ConnectionId))
+            {
+                _dicUsers.TryAdd(Context.ConnectionId, userName);
+            }
+
+            return new Result()
+            {
+                Status = true,
+                ConnectionId = Context.ConnectionId,
+                UserName = userName,
+                RoomName = roomName,
+            };
+        }
+
         public async Task OnChatBoard(string content)
         {
-            if (_dicGrpMaster.TryGetValue(Context.ConnectionId, out string roomName))
+            if (_dicGrps.TryGetValue(Context.ConnectionId, out string roomName))
             {
-                await Clients.Group(roomName).SendAsync("onChatBoard", new Result()
+                var group = Clients.Group(roomName);
+                if (group != null)
                 {
-                    Status = true,
-                    UserName = _dicUsers[Context.ConnectionId],
-                    ConnectionId = Context.ConnectionId,
-                    RoomName = roomName,
-                    Content = content
-                });
+                    await group.SendAsync("onChatBoard", new Result()
+                    {
+                        Status = true,
+                        UserName = _dicUsers[Context.ConnectionId],
+                        ConnectionId = Context.ConnectionId,
+                        RoomName = roomName,
+                        Content = content
+                    });
+                }
             }
         }
         public async Task OnPrintBoard(string content)
         {
-            if (_dicGrps.TryGetValue(Context.ConnectionId, out string roomName))
+            string roomName = string.Empty;
+            if (_dicGrpOwner.TryGetValue(Context.ConnectionId, out roomName) || _dicGrpPermission.TryGetValue(Context.ConnectionId, out roomName))
             {
                 var group = Clients.Group(roomName);
                 if (group != null)
@@ -76,44 +162,67 @@ namespace WhiteBoard
             }
         }
 
-        public async Task<Result> CreateOrJoinRoom(string userName, string roomName)
+        public async Task OnAction(string action)
         {
-            try
+            string roomName = string.Empty;
+            if (_dicGrpOwner.TryGetValue(Context.ConnectionId, out roomName) || _dicGrpPermission.TryGetValue(Context.ConnectionId, out roomName))
             {
-
-                if (!_dicGrpMaster.ContainsKey(Context.ConnectionId))
+                var group = Clients.Group(roomName);
+                if (group != null)
                 {
-                    _dicGrpMaster.TryAdd(Context.ConnectionId, roomName);
+                    await group.SendAsync("onAction", new
+                    {
+                        action = action,
+                        id = Context.ConnectionId
+                    });
                 }
-
-                if (!_dicGrps.ContainsKey(Context.ConnectionId))
-                {
-                    _dicGrps.TryAdd(Context.ConnectionId, roomName);
-                }
-
-                if (!_dicUsers.ContainsKey(Context.ConnectionId))
-                {
-                    _dicUsers.TryAdd(Context.ConnectionId, userName);
-                }
-
-                await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
-
-                return new Result()
-                {
-                    Status = true,
-                    UserName = userName,
-                    ConnectionId = Context.ConnectionId,
-                    RoomName = roomName
-                };
             }
-            catch (System.Exception ex)
+        }
+
+        public async Task SetPermission(string id, string roomName)
+        {
+            if (_dicGrpPermission.ContainsKey(id))
             {
-                return new Result()
-                {
-                    Status = false,
-                    ExMsg = ex.GetBaseException().Message
-                };
+                _dicGrpPermission.TryRemove(id, out _);
+                await Clients.Client(id).SendAsync("setPermission", false);
             }
+            else
+            {
+                _dicGrpPermission.TryAdd(id, roomName);
+                await Clients.Client(id).SendAsync("setPermission", true);
+            }
+
+        }
+
+        public bool GetPermission()
+        {
+            return _dicGrpOwner.ContainsKey(Context.ConnectionId) || _dicGrpPermission.ContainsKey(Context.ConnectionId);
+        }
+
+        public bool GetOwner()
+        {
+            return _dicGrpOwner.ContainsKey(Context.ConnectionId);
+        }
+
+        public IEnumerable<object> GetUsers()
+        {
+            List<object> list = new List<object>();
+            if (_dicGrpOwner.TryGetValue(Context.ConnectionId, out string roomName))
+            {
+                foreach (var item in _dicGrps)
+                {
+                    if (item.Value == roomName)
+                    {
+                        list.Add(new
+                        {
+                            id = item.Key,
+                            userName = _dicUsers[item.Key],
+                        });
+                    }
+                }
+            }
+
+            return list;
         }
     }
 
@@ -125,6 +234,5 @@ namespace WhiteBoard
         public string CurrentTime { get; set; } = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         public string RoomName { get; set; }
         public string Content { get; set; }
-        public string ExMsg { get; set; }
     }
 }

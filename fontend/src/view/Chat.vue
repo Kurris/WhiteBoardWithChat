@@ -4,9 +4,9 @@
             <el-col :xs="24" :sm="14" class="height_hb">
                 <el-card class="inner draw h100" @mousemove="beginPath($event)">
                     <div slot="header" class="clearfix canvasHeader">
-                        <span class="title">画板</span>
+                        <span class="title">画板 房间号:{{$route.query.roomName}} 登录用户:{{$route.query.userName}} 当前画图:{{currentPrint}}</span>
                     </div>
-                    <div class="canvasBox">
+                    <div :class="{canvasBox:true,disabled:!permission}">
                         <div class="canvasWrap" ref="canvasWrap">
                             <canvas id="canvas" :width="canvasWidth + 'px'" :height="canvasHeight + 'px'" @mousedown="canvasDown($event)" @mouseup="canvasUp($event)" @mousemove="canvasMove($event)" @touchstart="canvasDown($event)" @touchend="canvasUp($event)" @touchmove="canvasMove($event)">
                             </canvas>
@@ -24,7 +24,7 @@
                             </div>
                             <!--操作-->
                             <div id="canvas-control">
-                                <span v-for="(control, index) in controls" :title="control.title" :class="control.className" @click="controlCanvas(control.action)" :key="'control-' + index"></span>
+                                <span v-for="(control, index) in controls" :title="control.title" :class="control.className" @click="controlAction(control.action)" :key="'control-' + index"></span>
                             </div>
                         </div>
                     </div>
@@ -34,31 +34,34 @@
                 <el-card class="chatCard h100">
                     <div slot="header" class="clearfix chatHeader">
                         <span class="title">聊天区</span>
+                        <template v-if="owner">
+                            <el-button @click="drawer=true">在线用户</el-button>
+                        </template>
                     </div>
                     <div class="chatBody">
                         <div class="chatObj" v-for="(item, i) in chatArr" :key="i">
                             <div class="bubble me" v-if="item.type == 'me'">
                                 <div class="xq_c">
                                     <div class="rt_c">
-                                        <span class="name">user</span>
-                                        <span class="time">2020/7/22 17:39:28</span>
+                                        <span class="name">{{item.userName}}</span>
+                                        <span class="time">{{item.currentTime}}</span>
                                     </div>
                                     <div class="rb_c">
                                         <div v-html="item.content"></div>
                                     </div>
                                 </div>
                                 <div class="h_c">
-                                    <img src="../assets/images/t1.jpg" />
+                                    <img src="" alt="ME" />
                                 </div>
                             </div>
                             <div class="bubble your" v-else>
                                 <div class="h_c">
-                                    <img src="../assets/images/t2.jpg" />
+                                    <img src="" alt="OTHERS" />
                                 </div>
                                 <div class="xq_c">
                                     <div class="rt_c">
-                                        <span class="name">user</span>
-                                        <span class="time">2020/7/22 17:39:28</span>
+                                        <span class="name">{{item.userName}}</span>
+                                        <span class="time">{{item.currentTime}}</span>
                                     </div>
                                     <div class="rb_c">
                                         <div v-html="item.content"></div>
@@ -76,6 +79,15 @@
                 </el-card>
             </el-col>
         </el-row>
+
+        <el-drawer title="在线用户" :visible.sync="drawer" direction="rtl">
+            <template v-for="(item,index) in users">
+                <div :key="index">
+                    <span>{{item.userName}}</span>
+                    <el-button @click="setPermission(item.id,$route.query.roomName)">画图权限</el-button>
+                </div>
+            </template>
+        </el-drawer>
     </div>
 </template>
 
@@ -87,6 +99,11 @@ export default {
     name: "chat",
     data() {
         return {
+            owner: false,
+            users: [],
+            drawer: false,
+            currentPrint: '',
+            permission: true,
             canvasWidth: 0,
             canvasHeight: 0,
             editorContent: "",
@@ -110,7 +127,7 @@ export default {
             ],
             context: {},
             imgUrl: [],
-            canvasMoveUse: true,
+            canvasMoveUse: false,
             // 存储当前表面状态数组-上一步
             preDrawAry: [],
             // 存储当前表面状态数组-下一步
@@ -126,9 +143,15 @@ export default {
     },
     methods: {
         sendMsg() {
-            let content = this.editorContent;
             //需要清空内容
-            Vue.$signalR.invoke("OnChatBoard", content);
+            if (this.editorContent != '') {
+                Vue.$signalR.invoke("OnChatBoard", this.editorContent);
+                this.editor.txt.html('')
+            }
+        },
+        setPermission(id, room) {
+            Vue.$signalR.invoke('SetPermission', id, room)
+            this.drawer = !this.drawer
         },
         createEditor() {
             this.editor = new E(this.$refs.editor);
@@ -196,12 +219,18 @@ export default {
                 this.context.lineTo(canvasX, canvasY);
                 this.context.stroke();
 
-                //画画立刻生成图像
-                const canvas = document.querySelector("#canvas");
-                let canvasImg = canvas.toDataURL("image/png");
-                if (canvasImg && canvasImg != '') {
-                    Vue.$signalR.invoke("OnPrintBoard", canvasImg)
-                }
+                this.SyncImage();
+            }
+        },
+        SyncImage(clear) {
+            if (clear) {
+                this.context.clearRect(0, 0, this.context.canvas.width, this.context.canvas.height);
+            }
+            //画画立刻生成图像
+            let canvas = document.querySelector("#canvas");
+            let canvasImg = canvas.toDataURL("image/png");
+            if (canvasImg && canvasImg != '') {
+                Vue.$signalR.invoke("OnPrintBoard", canvasImg)
             }
         },
         beginPath(e) {
@@ -250,9 +279,56 @@ export default {
         setBrush(type) {
             this.config.lineWidth = type;
         },
-        // 操作
-        controlCanvas(action) {
-            switch (action) {
+        controlAction(action) {
+            Vue.$signalR.invoke('OnAction', action)
+        },
+        // 生成图片
+        getImage() {
+            const canvas = document.querySelector("#canvas");
+            const src = canvas.toDataURL("image/png");
+            this.imgUrl.push(src);
+            if (!this.isPc()) {
+                // window.open(`data:text/plain,${src}`)
+                window.location.href = src;
+            }
+        },
+        // 设置绘画配置
+        setCanvasStyle() {
+            this.context.lineWidth = this.config.lineWidth;
+            this.context.shadowBlur = this.config.shadowBlur;
+            this.context.shadowColor = this.config.lineColor;
+            this.context.strokeStyle = this.config.lineColor;
+        },
+    },
+    mounted() {
+        this.canvasWidth = this.$refs.canvasWrap.offsetWidth;
+        this.canvasHeight = this.$refs.canvasWrap.offsetHeight;
+        this.initCanvas();
+        this.createEditor();
+
+        //同步聊天室内容
+        Vue.$signalR.on("onChatBoard", (res) => {
+            if (res.status) {
+                this.chatArr.push({
+                    type: Vue.$signalR.connectionId == res.connectionId ? "me" : "your",
+                    content: res.content,
+                    userName: res.userName,
+                    currentTime: res.currentTime
+                });
+            }
+        });
+
+        //同步canvas数据
+        Vue.$signalR.on("onPrintBoard", (res) => {
+            if (res.status) {
+                this.currentPrint = res.userName
+                this.canvasBase64(res.content)
+            }
+        });
+
+        Vue.$signalR.on("onAction", res => {
+
+            switch (res.action) {
                 case "prev":
                     if (this.preDrawAry.length) {
                         const popData = this.preDrawAry.pop();
@@ -274,71 +350,32 @@ export default {
                     this.preDrawAry = [];
                     this.nextDrawAry = [];
                     this.middleAry = [this.middleAry[0]];
+
                     break;
             }
-        },
-        // 生成图片
-        getImage() {
-            const canvas = document.querySelector("#canvas");
-            const src = canvas.toDataURL("image/png");
-            this.imgUrl.push(src);
-            if (!this.isPc()) {
-                // window.open(`data:text/plain,${src}`)
-                window.location.href = src;
-            }
-        },
-        // 设置绘画配置
-        setCanvasStyle() {
-            this.context.lineWidth = this.config.lineWidth;
-            this.context.shadowBlur = this.config.shadowBlur;
-            this.context.shadowColor = this.config.lineColor;
-            this.context.strokeStyle = this.config.lineColor;
-        },
-        //base64转文件流
-        base64toFile(dataurl, filename = "fileImg") {
-            let arr = dataurl.split(",");
 
-            let mime = arr[0].match(/:(.*?);/)[1];
 
-            let suffix = mime.split("/")[1];
-
-            let bstr = atob(arr[1]);
-
-            let n = bstr.length;
-
-            let u8arr = new Uint8Array(n);
-
-            while (n--) {
-                u8arr[n] = bstr.charCodeAt(n);
-            }
-
-            return new File([u8arr], `${filename}.${suffix}`, {
-                type: mime,
-            });
-        },
-    },
-    mounted() {
-        this.canvasWidth = this.$refs.canvasWrap.offsetWidth;
-        this.canvasHeight = this.$refs.canvasWrap.offsetHeight;
-        this.initCanvas();
-        this.createEditor();
-
-        //同步聊天室内容
-        Vue.$signalR.on("onChatBoard", (res) => {
-            if (res.status) {
-                this.chatArr.push({
-                    type: Vue.$signalR.connectionId == res.connectionId ? "me" : "your",
-                    content: res.content,
-                });
-            }
+            this.SyncImage(Vue.$signalR.connectionId != res.id);
         });
 
-        //同步canvas数据
-        Vue.$signalR.on("onPrintBoard", (res) => {
-            if (res.status) {
-                this.canvasBase64(res.content)
+        Vue.$signalR.on("setPermission", res => {
+            this.permission = res
+        })
+        Vue.$signalR.invoke('GetPermission').then(per => {
+            this.permission = per
+        })
+
+        Vue.$signalR.invoke('GetOwner').then(owner => {
+            this.owner = owner
+        })
+
+        setInterval(() => {
+            if (this.owner) {
+                Vue.$signalR.invoke('GetUsers').then(users => {
+                    this.users = users
+                })
             }
-        });
+        }, 2000);
     },
     computed: {
         controls() {
@@ -361,11 +398,16 @@ export default {
             ];
         },
     },
-    created() { },
 };
 </script>
 
 <style lang="scss" scoped>
+.disabled {
+    pointer-events: none;
+
+    cursor: default;
+}
+
 .chatCard {
     position: relative;
     & ::v-deep.el-card__header {
