@@ -438,6 +438,12 @@ export default {
       }
     }, 2000);
   },
+  beforeCreate() {
+    // 浏览器刷新之后回到登录页面
+    if (!Vue.isLogin && this.$router.path !== "/") {
+      this.$router.replace("/");
+    }
+  },
   computed: {
     controls() {
       return [
