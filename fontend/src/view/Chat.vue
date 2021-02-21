@@ -10,8 +10,8 @@
               }}</span
             >
           </div>
-          <div :class="{ canvasBox: true, disabled: !permission }">
-            <div class="canvasWrap" ref="canvasWrap">
+          <div :class="{ canvasBox: true, disabled: !permission }" ref="canvasBox">
+            <div class="canvasWrap">
               <canvas
                 id="canvas"
                 :class="isEraser ? 'eraser' : ''"
@@ -28,7 +28,7 @@
             </div>
             <div id="control">
               <!--画笔颜色-->
-              <div id="canvas-color">
+              <!-- <div id="canvas-color">
                 <ul>
                   <li
                     v-for="(item, index) in colors"
@@ -38,7 +38,7 @@
                     :key="'color-' + index"
                   ></li>
                 </ul>
-              </div>
+              </div> -->
               <!--画笔-->
               <div id="canvas-brush">
                 <span
@@ -72,7 +72,7 @@
               <el-button @click="drawer = true" class="yhBtn">在线用户</el-button>
             </template>
           </div>
-          <div class="chatBody">
+          <div class="chatBody" id="chatBody">
             <div class="chatObj" v-for="(item, i) in chatArr" :key="i">
               <div class="bubble me" v-if="item.type == 'me'">
                 <div class="xq_c">
@@ -205,9 +205,15 @@ export default {
     },
     sendMsg() {
       //需要清空内容
-      if (this.editorContent != "") {
+      let nobq = this.editorContent;
+      nobq = nobq.replace(/<[^>]+>/g, "");
+      if (this.editorContent != "" && nobq) {
         Vue.$signalR.invoke("OnChatBoard", this.editorContent);
         this.editor.txt.html("");
+        var div = document.getElementById("chatBody");
+        setTimeout(function() {
+          div.scrollTop = div.scrollHeight;
+        }, 10);
       } else {
         this.$message.error("发送内容不能为空！");
       }
@@ -376,16 +382,16 @@ export default {
     },
   },
   mounted() {
-    this.canvasWidth = this.$refs.canvasWrap.offsetWidth;
-    this.canvasHeight = this.$refs.canvasWrap.offsetHeight;
+    this.canvasWidth = this.$refs.canvasBox.offsetWidth;
+    this.canvasHeight = this.$refs.canvasBox.offsetHeight;
     this.initCanvas();
     this.createEditor();
 
-    document.οnkeydοwn = (e) => {
-      let _key = window.event.keyCode;
-
-      if (_key === 13) {
-        this.sendMsg();
+    var _this = this;
+    document.getElementById("editor").onkeydown = function(e) {
+      let key = window.event.keyCode;
+      if (key == 13) {
+        _this.sendMsg();
       }
     };
 
@@ -465,6 +471,7 @@ export default {
       }
     }, 2000);
   },
+  created() {},
   beforeCreate() {
     // 浏览器刷新之后回到登录页面
     if (!Vue.isLogin && this.$router.path !== "/") {
@@ -679,9 +686,10 @@ export default {
 }
 .canvasBox {
   width: 100%;
-  height: 100%;
+  height: calc(100% - 80px);
+
   & .canvasWrap {
-    height: calc(100% - 80px);
+    height: 100%;
     & #canvas {
       cursor: crosshair;
     }
@@ -715,7 +723,7 @@ export default {
     }
 
     #canvas-brush {
-      padding-top: 10px !important;
+      padding-top: 8px !important;
       & span {
         display: inline-block;
         width: 20px;
@@ -724,20 +732,20 @@ export default {
         cursor: pointer;
       }
       & .small {
-        font-size: 12px;
-      }
-      & .middle {
         font-size: 14px;
       }
-      & .big {
+      & .middle {
         font-size: 16px;
+      }
+      & .big {
+        font-size: 18px;
       }
     }
     #canvas-control {
-      padding-top: 12px !important;
+      padding-top: 10px !important;
       & span {
         display: inline-block;
-        font-size: 14px;
+        font-size: 16px;
         width: 20px;
         height: 15px;
         margin-left: 10px;
