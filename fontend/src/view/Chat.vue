@@ -14,6 +14,7 @@
             <div class="canvasWrap" ref="canvasWrap">
               <canvas
                 id="canvas"
+                :class="isEraser ? 'eraser' : ''"
                 :width="canvasWidth + 'px'"
                 :height="canvasHeight + 'px'"
                 @mousedown="canvasDown($event)"
@@ -56,6 +57,8 @@
                   @click="controlAction(control.action)"
                   :key="'control-' + index"
                 ></span>
+                <!-- 橡皮 -->
+                <span class="fa fa-eraser" :class="isEraser ? 'active' : ''" @click="eraser"></span>
               </div>
             </div>
           </div>
@@ -181,6 +184,8 @@ export default {
       nextDrawAry: [],
       // 中间数组
       middleAry: [],
+      //在使用橡皮
+      isEraser: false,
       // 配置参数
       config: {
         lineWidth: 1,
@@ -189,6 +194,15 @@ export default {
     };
   },
   methods: {
+    //橡皮
+    eraser() {
+      this.isEraser = !this.isEraser;
+      if (this.isEraser) {
+        this.config.lineColor = "#fff";
+      } else {
+        this.config.lineColor = "#000";
+      }
+    },
     sendMsg() {
       //需要清空内容
       if (this.editorContent != "") {
@@ -276,8 +290,16 @@ export default {
           canvasX = e.changedTouches[0].clientX - t.parentNode.offsetLeft;
           canvasY = e.changedTouches[0].clientY - t.parentNode.offsetTop;
         }
-        this.context.lineTo(canvasX, canvasY);
-        this.context.stroke();
+        if (this.isEraser) {
+          //橡皮状态
+          this.context.arc(canvasX, canvasY, 30, 0, 5 * Math.PI);
+          this.context.closePath();
+          this.context.fillStyle = "white";
+          this.context.fill();
+        } else {
+          this.context.lineTo(canvasX, canvasY);
+          this.context.stroke();
+        }
 
         this.SyncImage();
       }
@@ -331,10 +353,15 @@ export default {
     },
     // 设置颜色
     setColor(color) {
+      this.isEraser = false;
       this.config.lineColor = color;
     },
     // 设置笔刷大小
     setBrush(type) {
+      if (this.isEraser) {
+        this.isEraser = false;
+        this.config.lineColor = "#000";
+      }
       this.config.lineWidth = type;
     },
     controlAction(action) {
@@ -474,7 +501,9 @@ export default {
 
   cursor: default;
 }
-
+.eraser {
+  cursor: url("../assets/images/eraser.png"), default !important;
+}
 .zxyhBox {
   padding: 5px 5%;
   & .yhOBj {
