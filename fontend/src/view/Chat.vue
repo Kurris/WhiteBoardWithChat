@@ -59,6 +59,8 @@
                 ></span>
                 <!-- 橡皮 -->
                 <span class="fa fa-eraser" :class="isEraser ? 'active' : ''" @click="eraser"></span>
+                <span class="fa fa-image" @click="setBg"></span>
+                <input ref="filElem" type="file" class="upload-file" style="display:none" @change="getFile" />
               </div>
             </div>
           </div>
@@ -194,6 +196,27 @@ export default {
     };
   },
   methods: {
+    //设置背景
+    setBg() {
+      this.$refs.filElem.dispatchEvent(new MouseEvent("click"));
+    },
+    getFile() {
+      var that = this;
+      const inputFile = this.$refs.filElem.files[0];
+      if (inputFile) {
+        if (inputFile.type !== "image/jpeg" && inputFile.type !== "image/png" && inputFile.type !== "image/gif") {
+          alert("不是有效的图片文件！");
+          return;
+        }
+        var reader = new FileReader();
+        reader.readAsDataURL(inputFile);
+        reader.onload = function(e) {
+          that.canvasBase64(this.result);
+        };
+      } else {
+        return;
+      }
+    },
     //橡皮
     eraser() {
       this.isEraser = !this.isEraser;
@@ -206,7 +229,8 @@ export default {
     sendMsg() {
       //需要清空内容
       let nobq = this.editorContent;
-      nobq = nobq.replace(/<[^>]+>/g, "");
+      //nobq = nobq.replace(/<[^>]+>/g, "");
+      nobq = true;
       if (this.editorContent != "" && nobq) {
         Vue.$signalR.invoke("OnChatBoard", this.editorContent);
         this.editor.txt.html("");
@@ -234,6 +258,7 @@ export default {
       this.drawer = !this.drawer;
     },
     createEditor() {
+      var that = this;
       this.editor = new E(this.$refs.editor);
       this.editor.config.onchange = (html) => {
         this.editorContent = html;
@@ -246,7 +271,24 @@ export default {
         "bold", // 粗体
         "emoticon", // 表情
         "foreColor", // 文字颜色
+        "image",
       ];
+      this.editor.config.uploadImgServer = "/upload-img";
+      this.editor.config.showLinkImg = false;
+      this.editor.config.uploadImgMaxLength = 1; // 一次最多上传 1 个图片
+      this.editor.config.customUploadImg = function(resultFiles, insertImgFn) {
+        var file = resultFiles[0];
+        var reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function(e) {
+          insertImgFn(this.result);
+        };
+        // resultFiles 是 input 中选中的文件列表
+        // insertImgFn 是获取图片 url 后，插入到编辑器的方法
+        // 上传图片，返回结果，将图片插入到编辑器中
+        //insertImgFn(imgUrl);
+      };
+      this.editor.config.uploadImgShowBase64 = true;
       this.editor.create();
     },
     initCanvas() {
