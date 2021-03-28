@@ -166,7 +166,7 @@ export default {
       brushs: [
         {
           className: "small fa fa-paint-brush",
-          lineWidth: 3,
+          lineWidth: 1,
         },
         {
           className: "middle fa fa-paint-brush",
