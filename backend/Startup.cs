@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Autofac;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using WhiteBoard.Cfg;
 
 namespace WhiteBoard
 {
@@ -55,6 +57,13 @@ namespace WhiteBoard
 
             });
         }
+
+        /// <summary>
+        /// 依赖注入Autofac
+        /// </summary>
+        /// <param name="builder"></param>
+        public void ConfigureContainer(ContainerBuilder builder) => builder.RegisterModule<AutofacModule>();
+
 
         /// <summary>
         /// 请求管道
