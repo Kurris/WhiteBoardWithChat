@@ -14,7 +14,6 @@ namespace WhiteBoard.Service.implements
         public async Task<TData<string>> Login(string userName, string password)
         {
             TData<string> tdResult = new TData<string>();
-
             await using (var op = await DataBaseOperation.BeginTransAsync())
             {
                 try
@@ -48,9 +47,34 @@ namespace WhiteBoard.Service.implements
             return tdResult;
         }
 
-        public Task<TData<string>> SignIn(User user)
+        public async Task<TData<string>> SignIn(User user)
         {
-            throw new NotImplementedException();
+            TData<string> tdResult = new TData<string>();
+            await using (var op = await DataBaseOperation.BeginTransAsync())
+            {
+                try
+                {
+                    User existUser = await op.FindAsync<User>(x => x.UserName == user.UserName);
+                    if (existUser != null)
+                    {
+                        tdResult.Fail($"注册失败,已经存在用户{user.UserName}");
+                    }
+                    else
+                    {
+                        user.Password = SecurityHelper.MD5Encrypt(user.Password);                      
+                        await op.AddAsync(user);
+                        await op.CommitTransAsync();
+                        tdResult.Success("注册成功");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await op.RollbackTransAsync();
+                    tdResult.Error(ex);
+                }
+            }
+
+            return tdResult;
         }
     }
 }
