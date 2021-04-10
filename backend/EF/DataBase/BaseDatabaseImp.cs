@@ -11,17 +11,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using WhiteBoard.EF.Abstractions;
 using WhiteBoard.EF.DataBase;
 using WhiteBoard.EF.DataBase.Extension;
 
-namespace WhiteBoard.EF.Abstractions
+namespace WhiteBoard.EF.DataBase
 {
     /// <summary>
     /// 数据库操作实现抽象基类
     /// </summary>
     public abstract class BaseDatabaseImp : IDataBaseOperation
     {
-
+        public DBExtension DBExtension { get; set; }
         public ILogger<BaseDatabaseImp> Logger { get; set; }
 
         public BaseDatabaseImp(MyDbContext myDbContext)

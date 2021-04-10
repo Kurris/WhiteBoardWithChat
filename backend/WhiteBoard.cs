@@ -21,7 +21,7 @@ namespace WhiteBoard
         //id room
         static ConcurrentDictionary<string, string> _dicGrpPermission = new ConcurrentDictionary<string, string>();
 
-
+        
 
         public override async Task OnDisconnectedAsync(Exception exception)
         {

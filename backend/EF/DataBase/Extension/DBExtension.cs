@@ -19,7 +19,7 @@ namespace WhiteBoard.EF.DataBase.Extension
     /// <summary>
     /// DataBase操作扩展帮助
     /// </summary>
-    internal class DBExtension
+    public class DBExtension
     {
         #region 分页排序
         /// <summary>
@@ -30,7 +30,7 @@ namespace WhiteBoard.EF.DataBase.Extension
         /// <param name="sort"></param>
         /// <param name="isAsc"></param>
         /// <returns></returns>
-        internal static IQueryable<T> PaginationSort<T>(IQueryable<T> tmpData, string sort, bool isAsc) where T : class
+        internal IQueryable<T> PaginationSort<T>(IQueryable<T> tmpData, string sort, bool isAsc) where T : class
         {
             string[] sortArr = sort.Split(',');
 
@@ -81,7 +81,7 @@ namespace WhiteBoard.EF.DataBase.Extension
         /// </summary>
         /// <param name="dbContext">当前上下文</param>
         /// <param name="entity">实例</param>
-        internal static void RecursionAttach(DbContext dbContext, object entity)
+        internal void RecursionAttach(DbContext dbContext, object entity)
         {
 
             var entityType = FindTrackingEntity(dbContext, entity);
@@ -128,7 +128,7 @@ namespace WhiteBoard.EF.DataBase.Extension
         /// <param name="dbContext">当前上下文</param>
         /// <param name="entity">实例</param>
         /// <returns></returns>
-        private static EntityEntry FindTrackingEntity(DbContext dbContext, object entity)
+        private EntityEntry FindTrackingEntity(DbContext dbContext, object entity)
         {
             foreach (var item in dbContext.ChangeTracker.Entries())
             {
@@ -159,12 +159,12 @@ namespace WhiteBoard.EF.DataBase.Extension
         #endregion
 
 
-        internal static string GetSql<TEntity>(IQueryable<TEntity> query)
+        internal string GetSql<TEntity>(IQueryable<TEntity> query)
         {
             var enumerator = query.Provider.Execute<IEnumerable<TEntity>>(query.Expression).GetEnumerator();
-            var relationalCommandCache = DBExtension.Private(enumerator, "_relationalCommandCache");
-            var selectExpression = DBExtension.Private<SelectExpression>(relationalCommandCache, "_selectExpression");
-            var factory = DBExtension.Private<IQuerySqlGeneratorFactory>(relationalCommandCache, "_querySqlGeneratorFactory");
+            var relationalCommandCache = Private(enumerator, "_relationalCommandCache");
+            var selectExpression = Private<SelectExpression>(relationalCommandCache, "_selectExpression");
+            var factory = Private<IQuerySqlGeneratorFactory>(relationalCommandCache, "_querySqlGeneratorFactory");
 
             var sqlGenerator = factory.Create();
             var command = sqlGenerator.GetCommand(selectExpression);
@@ -179,7 +179,7 @@ namespace WhiteBoard.EF.DataBase.Extension
         /// <typeparam name="T"></typeparam>
         /// <param name="reader"></param>
         /// <returns></returns>
-        public static List<T> IDataReaderToList<T>(IDataReader reader) where T : new()
+        public List<T> IDataReaderToList<T>(IDataReader reader) where T : new()
         {
             using (reader)
             {
@@ -220,7 +220,7 @@ namespace WhiteBoard.EF.DataBase.Extension
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        public static List<PropertyInfo> GetProperties(Type type)
+        public List<PropertyInfo> GetProperties(Type type)
         {
             List<PropertyInfo> properties = null;
             if (dictCache.ContainsKey(type.FullName))
@@ -243,7 +243,7 @@ namespace WhiteBoard.EF.DataBase.Extension
 
 
         //这个类对可空类型进行判断转换，要不然会报错
-        public static object HackType(object value, Type conversionType)
+        public object HackType(object value, Type conversionType)
         {
             if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
             {
@@ -261,8 +261,8 @@ namespace WhiteBoard.EF.DataBase.Extension
 
 
         #region 私有方法
-        private static object Private(object obj, string privateField) => obj?.GetType().GetField(privateField, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(obj);
-        private static T Private<T>(object obj, string privateField) => (T)obj?.GetType().GetField(privateField, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(obj);
+        private object Private(object obj, string privateField) => obj?.GetType().GetField(privateField, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(obj);
+        private T Private<T>(object obj, string privateField) => (T)obj?.GetType().GetField(privateField, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(obj);
         #endregion
     }
 }

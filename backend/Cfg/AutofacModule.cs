@@ -24,19 +24,13 @@ namespace WhiteBoard.Cfg
 
 
             //注入数据库访问
-            var efTypes = types.Where(x => x.FullName.StartsWith("WhiteBoard.EF", StringComparison.OrdinalIgnoreCase));
-            foreach (var type in efTypes)
-            {
-                if (type.GetConstructors().Count() > 0)
-                {
-                    builder.RegisterType(type).InstancePerDependency().PropertiesAutowired();
-                }
-            }
+            var efTypes = types.Where(x => x.FullName.StartsWith("WhiteBoard.EF") && !x.IsAbstract && x.GetConstructors().Count() > 0);
+            builder.RegisterAssemblyTypes(Assembly.GetExecutingAssembly()).Where(x => x.GetConstructors().Count() > 0).InstancePerDependency().PropertiesAutowired();
             builder.RegisterType(efTypes.First(x => x.Name == "MySqlDB")).As<IDataBaseOperation>().InstancePerDependency().PropertiesAutowired();
 
 
             //业务注入
-            var businessTypes = types.Where(x => x.FullName.StartsWith("WhiteBoard.Service", StringComparison.OrdinalIgnoreCase));
+            var businessTypes = types.Where(x => x.FullName.StartsWith("WhiteBoard.Service", StringComparison.OrdinalIgnoreCase) && !x.IsAbstract);
             builder.RegisterTypes(businessTypes.ToArray()).InstancePerLifetimeScope().AsImplementedInterfaces().PropertiesAutowired();
         }
     }

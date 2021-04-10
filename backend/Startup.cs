@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Autofac;
 using Microsoft.AspNetCore.Builder;
@@ -13,6 +15,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using WhiteBoard.Cfg;
+using WhiteBoard.Filter;
 
 namespace WhiteBoard
 {
@@ -56,6 +59,12 @@ namespace WhiteBoard
                 option.IncludeXmlComments(xml);
 
             });
+
+            services.AddMvc(option =>
+            {
+                option.Filters.AddService<CustomExceptionFilterAttribute>();
+                option.Filters.AddService<CustomActionAndResultFilterAttribute>();
+            });
         }
 
         /// <summary>
@@ -72,6 +81,14 @@ namespace WhiteBoard
         /// <param name="env"></param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            CultureInfo cultureInfo = new CultureInfo("zh-CN");
+            cultureInfo.DateTimeFormat.AMDesignator = string.Empty;
+            cultureInfo.DateTimeFormat.PMDesignator = string.Empty;
+            CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+            CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -85,6 +102,7 @@ namespace WhiteBoard
 
             app.UseRouting();
             app.UseCors(_corsPolicy);
+            app.UseMiddleware<GlobalMiddleware>();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
