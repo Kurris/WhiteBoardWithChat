@@ -31,7 +31,7 @@ namespace WhiteBoard
             {
                 option.MaximumReceiveMessageSize = 102400000;
             });
-            services.AddMemoryCache();
+
             services.AddCors(op =>
             {
                 op.AddPolicy(_corsPolicy, builder =>
@@ -41,7 +41,7 @@ namespace WhiteBoard
             });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        //管道
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())

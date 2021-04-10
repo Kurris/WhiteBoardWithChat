@@ -9,10 +9,18 @@ namespace WhiteBoard
 {
     public class WhiteBoard : Hub
     {
+        //id room
         static ConcurrentDictionary<string, string> _dicGrps = new ConcurrentDictionary<string, string>();
+
+        //id userName
         static ConcurrentDictionary<string, string> _dicUsers = new ConcurrentDictionary<string, string>();
+
+        //id room
         static ConcurrentDictionary<string, string> _dicGrpOwner = new ConcurrentDictionary<string, string>();
+
+        //id room
         static ConcurrentDictionary<string, string> _dicGrpPermission = new ConcurrentDictionary<string, string>();
+
 
 
         public override async Task OnDisconnectedAsync(Exception exception)
@@ -107,6 +115,7 @@ namespace WhiteBoard
             {
                 _dicGrps.TryAdd(Context.ConnectionId, roomName);
             }
+            //当前id加入到组里面
             await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
 
             //记录用户名称
@@ -193,7 +202,6 @@ namespace WhiteBoard
             }
 
         }
-
         public bool GetPermission()
         {
             return _dicGrpOwner.ContainsKey(Context.ConnectionId) || _dicGrpPermission.ContainsKey(Context.ConnectionId);

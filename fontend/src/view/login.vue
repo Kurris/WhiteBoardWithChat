@@ -75,7 +75,7 @@ export default {
 
       //连接开始
       await connection.start();
-
+        //on 在前端注册方法, invoke 调用后端的方法
       if (type == 0) {
         connection.invoke("CreateRoom", this.ruleForm.username, this.ruleForm.roomName).then((res) => {
           if (res.status) {
