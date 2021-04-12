@@ -136,6 +136,14 @@ namespace WhiteBoard.Service
         /// <returns><see cref="TData{int}"/></returns>
         Task<TData<int>> DeleteAsync(T t);
 
+
+        /// <summary>
+        /// 删除
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        Task<TData<int>> DeleteAsync(Expression<Func<T, bool>> predicate);
+
         /// <summary>
         /// 删除实体(无事务)
         /// </summary>

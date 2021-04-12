@@ -15,6 +15,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using WhiteBoard.Cfg;
+using WhiteBoard.Core.Hubs;
 using WhiteBoard.Filter;
 
 namespace WhiteBoard
@@ -108,7 +109,7 @@ namespace WhiteBoard
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapHub<WhiteBoard>("/WhiteBoard");
+                endpoints.MapHub<WhiteBoardHub>("/WhiteBoard");
             });
         }
     }

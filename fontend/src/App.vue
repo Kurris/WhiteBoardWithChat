@@ -1,18 +1,18 @@
 <template>
-  <div id="app">
-    <router-view />
-  </div>
+    <div id="app">
+        <router-view />
+    </div>
 </template>
 
 <script>
 export default {
-  name: "App",
-  components: {},
+    name: "App",
+    components: {},
 };
 </script>
 
 <style lang="scss" scoped>
 #app {
-  height: 100%;
+    height: 100%;
 }
 </style>

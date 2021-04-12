@@ -11,11 +11,20 @@ namespace WhiteBoard.Service.implements
 {
     public class UserService : BaseService<User>, IUserService
     {
-        public async Task<TData<string>> Login(string userName, string password)
+        public async Task<TData<User>> GetUserBySignalRConnectionId(string id)
         {
-            TData<string> tdResult = new TData<string>();
+            await using (DataBaseOperation.AsNoTracking())
+            {
+                var tdUser = await this.FindAsync(x => x.SignalRConnectionId == id);
+                return tdUser;
+            }
+        }
+
+        public async Task<TData<User>> Login(string userName, string password)
+        {
             await using (var op = await DataBaseOperation.BeginTransAsync())
             {
+                TData<User> tdResult = new TData<User>();
                 try
                 {
                     User user = await op.AsNoTracking<User>().Where(x => x.UserName == userName).FirstOrDefaultAsync();
@@ -32,7 +41,8 @@ namespace WhiteBoard.Service.implements
                         }
                         else
                         {
-                            tdResult.Success("登陆成功");
+                            user.Password = string.Empty;
+                            tdResult.Success("登陆成功", user, Status.LoginSuccess);
                         }
                     }
                     await op.CommitTransAsync();
@@ -42,12 +52,37 @@ namespace WhiteBoard.Service.implements
                     await op.RollbackTransAsync();
                     tdResult.Error(ex);
                 }
+                return tdResult;
             }
-
-            return tdResult;
         }
 
-        public async Task<TData<string>> SignIn(User user)
+        public async Task<TData<int>> SetSignalRConnectionId(int userId, string id)
+        {
+            await using (var op = await DataBaseOperation.BeginTransAsync())
+            {
+                TData<int> tdResult = new TData<int>();
+                tdResult.Fail("查询失败");
+                var user = await op.AsNoTracking().FindAsync<User>(x => x.Id == userId);
+                if (user != null)
+                {
+                    User userSave = new User()
+                    {
+                        Id = userId,
+                        SignalRConnectionId = id
+                    };
+                    await this.SaveAsyncWithNoTrans(userSave);
+
+                    tdResult.Success("设置成功");
+                }
+               
+
+                await op.CommitTransAsync();
+
+                return tdResult;
+            }
+        }
+
+        public async Task<TData<string>> SignUp(User user)
         {
             TData<string> tdResult = new TData<string>();
             await using (var op = await DataBaseOperation.BeginTransAsync())
@@ -61,7 +96,7 @@ namespace WhiteBoard.Service.implements
                     }
                     else
                     {
-                        user.Password = SecurityHelper.MD5Encrypt(user.Password);                      
+                        user.Password = SecurityHelper.MD5Encrypt(user.Password);
                         await op.AddAsync(user);
                         await op.CommitTransAsync();
                         tdResult.Success("注册成功");

@@ -326,6 +326,28 @@ namespace WhiteBoard.Service.implements
 
             return tdResult;
         }
+
+        public virtual async Task<TData<int>> DeleteAsync(Expression<Func<T, bool>> predicate)
+        {
+            await using (var op = await DataBaseOperation.BeginTransAsync())
+            {
+                var tdResult = new TData<int>();
+                try
+                {
+                    int count = await op.DeleteAsync(predicate);
+                    await op.CommitTransAsync();
+                    tdResult.Success("删除成功", count);
+                }
+                catch (Exception ex)
+                {
+                    await op.RollbackTransAsync();
+                    tdResult.Error(ex);
+                }
+                return tdResult;
+            }
+        }
+
+
         public virtual async Task<TData<int>> DeleteAsyncWithNoTrans(int id)
         {
             var tdResult = new TData<int>();

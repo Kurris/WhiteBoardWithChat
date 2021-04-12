@@ -25,20 +25,11 @@ namespace WhiteBoard.Entity
         [Key]
         public int Id { get; set; }
 
-        /// <summary>
-        /// 创建人
-        /// </summary>
-        public int Creator { get; set; }
 
         /// <summary>
         /// 创建时间
         /// </summary>
         public DateTime CreateTime { get; set; }
-
-        /// <summary>
-        /// 修改人
-        /// </summary>
-        public int? Modifier { get; set; }
 
         /// <summary>
         /// 修改时间

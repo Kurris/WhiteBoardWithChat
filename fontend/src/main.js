@@ -10,11 +10,10 @@ import 'font-awesome/css/font-awesome.min.css'
 import './assets/css/base.css'
 import './assets/css/scss/common.min.css'
 
-
 Vue.config.productionTip = false
 Vue.use(ElementUI, { size: 'mini' })
 
 new Vue({
-  router,
-  render: h => h(App),
+	router,
+	render: h => h(App),
 }).$mount('#app')

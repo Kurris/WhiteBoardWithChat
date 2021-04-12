@@ -9,7 +9,9 @@ namespace WhiteBoard.Service
 {
     public interface IUserService : IBaseService<User>
     {
-        Task<TData<string>> Login(string userName, string password);
-        Task<TData<string>> SignIn(User user);
+        Task<TData<User>> Login(string userName, string password);
+        Task<TData<string>> SignUp(User user);
+        Task<TData<User>> GetUserBySignalRConnectionId(string id);
+        Task<TData<int>> SetSignalRConnectionId(int userId, string id);
     }
 }

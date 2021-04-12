@@ -14,9 +14,7 @@ namespace WhiteBoard.Migrations
                 {
                     Id = table.Column<int>(nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Creator = table.Column<int>(nullable: false),
                     CreateTime = table.Column<DateTime>(maxLength: 14, nullable: false),
-                    Modifier = table.Column<int>(nullable: true),
                     ModifyTime = table.Column<DateTime>(maxLength: 14, nullable: true),
                     RoomCode = table.Column<long>(nullable: false),
                     UserId = table.Column<int>(nullable: false),
@@ -33,15 +31,15 @@ namespace WhiteBoard.Migrations
                 {
                     Id = table.Column<int>(nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Creator = table.Column<int>(nullable: false),
                     CreateTime = table.Column<DateTime>(maxLength: 14, nullable: false),
-                    Modifier = table.Column<int>(nullable: true),
                     ModifyTime = table.Column<DateTime>(maxLength: 14, nullable: true),
                     RoomCode = table.Column<long>(nullable: false),
-                    RoomName = table.Column<string>(nullable: true),
+                    RoomName = table.Column<string>(nullable: false),
                     Owner = table.Column<int>(nullable: false),
                     IsNeedPassword = table.Column<bool>(nullable: false),
-                    Password = table.Column<string>(nullable: true)
+                    Password = table.Column<string>(nullable: true),
+                    Discriminator = table.Column<string>(nullable: false),
+                    Moderator = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
                 {
@@ -54,9 +52,7 @@ namespace WhiteBoard.Migrations
                 {
                     Id = table.Column<int>(nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    Creator = table.Column<int>(nullable: false),
                     CreateTime = table.Column<DateTime>(maxLength: 14, nullable: false),
-                    Modifier = table.Column<int>(nullable: true),
                     ModifyTime = table.Column<DateTime>(maxLength: 14, nullable: true),
                     UserName = table.Column<string>(nullable: true),
                     RealName = table.Column<string>(nullable: true),

@@ -27,12 +27,6 @@ namespace WhiteBoard.Migrations
                         .HasColumnType("datetime(6)")
                         .HasMaxLength(14);
 
-                    b.Property<int>("Creator")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Modifier")
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("ModifyTime")
                         .HasColumnType("datetime(6)")
                         .HasMaxLength(14);
@@ -61,14 +55,12 @@ namespace WhiteBoard.Migrations
                         .HasColumnType("datetime(6)")
                         .HasMaxLength(14);
 
-                    b.Property<int>("Creator")
-                        .HasColumnType("int");
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<bool>("IsNeedPassword")
                         .HasColumnType("tinyint(1)");
-
-                    b.Property<int?>("Modifier")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("ModifyTime")
                         .HasColumnType("datetime(6)")
@@ -84,11 +76,14 @@ namespace WhiteBoard.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("RoomName")
+                        .IsRequired()
                         .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.HasKey("Id");
 
                     b.ToTable("Rooms");
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("Room");
                 });
 
             modelBuilder.Entity("WhiteBoard.Entity.User", b =>
@@ -100,12 +95,6 @@ namespace WhiteBoard.Migrations
                     b.Property<DateTime>("CreateTime")
                         .HasColumnType("datetime(6)")
                         .HasMaxLength(14);
-
-                    b.Property<int>("Creator")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Modifier")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("ModifyTime")
                         .HasColumnType("datetime(6)")
@@ -126,6 +115,18 @@ namespace WhiteBoard.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("WhiteBoard.Model.RoomDTO", b =>
+                {
+                    b.HasBaseType("WhiteBoard.Entity.Room");
+
+                    b.Property<string>("Moderator")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.ToTable("Rooms");
+
+                    b.HasDiscriminator().HasValue("RoomDTO");
                 });
 #pragma warning restore 612, 618
         }
